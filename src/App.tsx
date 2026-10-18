@@ -34,6 +34,30 @@ Requirements:
 - Hands-on cloud experience with AWS (S3, Lambda, ECS, RDS)
 - Background in distributed data pipelines and database optimization`);
 
+// Handles loading files directly from your computer or Google Drive sync folder
+const handleFileUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const fileContent = event.target.result;
+    const newTemplate = {
+      id: `drive-${Date.now()}`,
+      title: file.name.replace(/\.[^/.]+$/, ""),
+      updatedAt: 'Imported from Drive / Local',
+      content: fileContent
+    };
+    // Prepend to template list and select it
+    setTemplates(prev => [newTemplate, ...prev]);
+    setSelectedTemplateId(newTemplate.id);
+    setTailoredResume(fileContent);
+  };
+  reader.readAsText(file);
+};
+
+
+
   const [activeTab, setActiveTab] = useState('resume');
   const [isTailoring, setIsTailoring] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -229,10 +253,25 @@ Alex Morgan`
 
           {/* Drive Templates */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-emerald-600" />
-              2. Google Drive Base Template
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <HardDrive className="w-4 h-4 text-emerald-600" />
+                2. Google Drive Base Template
+              </h2>
+              
+              {/* Import / Drive File Picker Button */}
+              <label className="cursor-pointer text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+                <HardDrive className="w-3.5 h-3.5" />
+                <span>+ Import Drive File</span>
+                <input 
+                  type="file" 
+                  accept=".txt,.md,.doc,.docx" 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                />
+              </label>
+            </div>
+
             <div className="space-y-2">
               {templates.map(tpl => (
                 <div
