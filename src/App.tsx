@@ -55,16 +55,48 @@ Sincerely,
 Alex Morgan`
   );
 
-  const handleSimulateUrlFetch = () => {
+  const handleSimulateUrlFetch = async () => {
     if (!jobUrl) return;
     setIsTailoring(true);
-    setTimeout(() => {
-      setRoleTitle('Senior Platform Engineer');
-      setCompanyName('TechForward Systems');
-      setKeySkills('React, Node.js, AWS, Cloud Architecture, GraphQL, Docker, Microservices');
+  
+    try {
+      // Route via CORS proxy to download the career page HTML
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(jobUrl)}`);
+      const data = await response.json();
+      
+      // Parse the retrieved HTML into a document
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, 'text/html');
+  
+      // Remove scripts, styles, and headers/footers
+      doc.querySelectorAll('script, style, nav, footer, header').forEach(el => el.remove());
+  
+      // Extract title, company, and raw readable body text
+      const extractedTitle = doc.querySelector('h1')?.innerText?.trim() || doc.title || 'Target Role';
+      const rawText = doc.body.innerText.replace(/\s+/g, ' ').slice(0, 3500);
+  
+      setRoleTitle(extractedTitle);
+      setJobDesc(rawText);
+  
+      // Heuristic keyword matcher: look for common tech and industry terms
+      const potentialKeywords = [
+        'React', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'AWS', 'Docker',
+        'Kubernetes', 'SQL', 'PostgreSQL', 'GraphQL', 'CI/CD', 'Agile', 'Scrum',
+        'System Architecture', 'Microservices', 'RESTful APIs', 'Cross-functional'
+      ];
+      const detected = potentialKeywords.filter(kw => 
+        new RegExp(`\\b${kw}\\b`, 'i').test(rawText)
+      );
+      if (detected.length > 0) {
+        setKeySkills(detected.join(', '));
+      }
+    } catch (err) {
+      alert("Could not automatically scrape this URL due to company firewall or CAPTCHA. You can paste the description text directly into the box below.");
+    } finally {
       setIsTailoring(false);
-    }, 800);
+    }
   };
+  
 
   const handleGenerateATS = () => {
     setIsTailoring(true);
